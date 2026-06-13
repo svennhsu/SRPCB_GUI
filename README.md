@@ -16,6 +16,14 @@ We combined PCB image super-resolution (SR) with Faster R-CNN component counting
 |---|---|---|
 | ![](docs/example_input.jpg) | ![](docs/example_sr.png) | ![](docs/example_detection.png) |
 
+**Unseen PCB** (not in dataset):
+
+| Input | Detection Report |
+|---|---|
+| ![](docs/Olympus_C-960.jpg) | ![](docs/Olympus_C-960_V4_Report.jpg) |
+
+Performance on an unseen PCB shows that the method works well on unseen PCBs, though results could be improved with fine-tuning on more diverse data.
+
 ---
 
 ## Features
