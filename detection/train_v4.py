@@ -1,12 +1,4 @@
-"""
-V4 Training Orchestrator — With Real-Time Metrics
-==================================================
-Features:
-1. Hardcoded Scale Lock Enforcement (512x512 forced)
-2. Real-Time MAP, Precision & Recall valuation EVERY EPOCH!
-3. Best-Model Saving based on mAP50, NOT Loss!
-4. Full Isolated Execution in /v4
-"""
+"""V4 training orchestrator."""
 
 import os
 import time
@@ -17,7 +9,6 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from torchvision.ops import box_iou
 
-# Import isolated local files
 from pretrained_model import get_pretrained_fasterrcnn_v4, unfreeze_backbone_v4, cuda_diagnostic
 from dataset_v4 import PCBDatasetV4, classify_annotation
 from inference_v4 import run_v4_inference_pil
@@ -37,10 +28,9 @@ def create_imbalance_sampler(dataset_subset):
             boost = 1.0
             for obj in root.findall('object'):
                 cid = classify_annotation(obj.find('name').text)
-                # Massive boost priority for minority components
-                if cid in [5, 6, 7]: # LED, Transistor, Diode
+                if cid in [5, 6, 7]:
                     boost = 10.0; break 
-                if cid == 3: # IC
+                if cid == 3:
                     boost = max(boost, 3.0) 
             weights.append(boost)
         except:
@@ -49,17 +39,12 @@ def create_imbalance_sampler(dataset_subset):
 
 @torch.no_grad()
 def evaluate_precision_recall_map(model, loader, device, iou_threshold=0.5):
-    """
-    Computes aggregate detection metrics (Precision, Recall, F1) aligned with
-    the new high-precision V4 tiled inference and dynamic scaling system.
-    """
+    """Compute aggregate detection metrics (Precision, Recall, F1)."""
     model.eval()
     all_tp = 0
     all_fp = 0
     all_total_gt = 0
     
-    # Restrict to first 150 images to maintain high training speed, 
-    # while gaining high confidence statistical samples.
     sample_limit = 150 
     processed = 0
 
@@ -74,10 +59,8 @@ def evaluate_precision_recall_map(model, loader, device, iou_threshold=0.5):
             t_labels = t['labels'].cpu()
             all_total_gt += len(t_labels)
             
-            # Convert PyTorch tensor to PIL Image to run production scale-adaptive tiled pipeline
             img_pil = TF.to_pil_image(img_tensor.cpu())
             
-            # Run the exact high-fidelity production inference pipeline!
             p_boxes_np, p_scores_np, p_labels_np = run_v4_inference_pil(
                 img_pil,
                 model,
@@ -94,7 +77,6 @@ def evaluate_precision_recall_map(model, loader, device, iou_threshold=0.5):
             )
             
             if len(p_labels_np) == 0:
-                # 0 TP, 0 FP, all FN
                 continue
                 
             p_boxes = torch.tensor(p_boxes_np, dtype=torch.float32)
@@ -104,19 +86,17 @@ def evaluate_precision_recall_map(model, loader, device, iou_threshold=0.5):
                 all_fp += len(p_labels)
                 continue
                 
-            # Compute pairwise IoU
-            ious = box_iou(p_boxes, t_boxes) # [N_pred, M_gt]
+            ious = box_iou(p_boxes, t_boxes)
             
             matches = 0
             matched_gts = set()
             
-            # Simple matching strategy for stats
             for p_idx in range(len(p_boxes)):
                 best_iou = iou_threshold
                 best_gt = -1
                 for g_idx in range(len(t_labels)):
                     if g_idx in matched_gts: continue
-                    if p_labels[p_idx] != t_labels[g_idx]: continue # Must match class
+                    if p_labels[p_idx] != t_labels[g_idx]: continue
                     
                     curr_iou = ious[p_idx, g_idx].item()
                     if curr_iou >= best_iou:
@@ -169,7 +149,6 @@ def main():
     cuda_diagnostic()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    # Local Project Structure Discovery
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     patch_dir = os.path.join(root, "processed_patches_v4")
     
@@ -183,33 +162,26 @@ def main():
     train_size = int(0.85 * len(full))
     train_set, val_set = torch.utils.data.random_split(full, [train_size, len(full)-train_size])
     
-    # ⚖️ BALANCER: Scan training data to ensure rare components receive priority representation
     train_sampler = create_imbalance_sampler(train_set)
     
-    # High-Resolution Imagery Loader with Intelligent Class Balancing
-    # ⚠️ SAFETY CAP: Reduced to 3 to ensure Phase 2 unfreezing doesn't trigger OOM on the 24GB limit.
     train_loader = DataLoader(train_set, batch_size=3, sampler=train_sampler, collate_fn=collate_fn, pin_memory=True, num_workers=4)
     val_loader = DataLoader(val_set, batch_size=2, shuffle=False, collate_fn=collate_fn, pin_memory=True)
     
     print(f"Starting V4 Run | Train: {len(train_set)} | Val: {len(val_set)}")
     
-    # Scale Locked Model Init
     model = get_pretrained_fasterrcnn_v4(num_classes=8, freeze_backbone=True)
     model.to(device)
     
-    # ── Command-Line Parameter Parsing ──────────────────────────────────────────
     import argparse
     parser = argparse.ArgumentParser(description="V4 Training Orchestrator")
     parser.add_argument("--restart", action="store_true", help="Restart training from epoch 0")
     parser.add_argument("--best_model", action="store_true", help="Load weights from best_model.pth")
     args = parser.parse_known_args()[0]
-    # ────────────────────────────────────────────────────────────────────────────
 
     chk_dir = os.path.join(root, "checkpoints_v4")
     os.makedirs(chk_dir, exist_ok=True)
     
-    # TRAINING REGIME (2 Phase)
-    # PHASE 1: Burn in the head quickly
+    # Phase 1: Head training
     optim = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=5e-3, momentum=0.9, weight_decay=5e-4)
     scaler = torch.amp.GradScaler('cuda') if torch.cuda.is_available() else None
     
@@ -217,15 +189,11 @@ def main():
     
     history = {'epoch': [], 'prec': [], 'rec': [], 'f1': [], 'loss': []}
     
-    # 💾 AUTOMATIC CHECKPOINT RESUMPTION / EXPLICIT RESTART
-    # Seamlessly picks up where it left off, or restarts with best weights per user input.
     start_epoch = 0
     
-    # Choose loading pathway
     if args.best_model:
         ckpt_path = os.path.join(chk_dir, "best_model.pth")
     else:
-        # Priority load: latest temporary backup -> best model fallback
         ckpt_path = os.path.join(chk_dir, "last_epoch.pth") 
         if not os.path.exists(ckpt_path):
             ckpt_path = os.path.join(chk_dir, "best_model.pth")
@@ -234,11 +202,9 @@ def main():
         lbl_msg = "best_model.pth" if "best_model.pth" in ckpt_path else "last_epoch.pth"
         print(f"\n[LOAD] Attempting weights load from: {lbl_msg}")
         try:
-            # Set weights_only=False as standard safety for non-production legacy loading
             load_pkg = torch.load(ckpt_path, map_location=device, weights_only=False)
             model.load_state_dict(load_pkg['model_state_dict'])
             
-            # Always fetch the global absolute best F1 from best_model.pth
             best_ckpt = os.path.join(chk_dir, "best_model.pth")
             if os.path.exists(best_ckpt):
                 temp_b = torch.load(best_ckpt, map_location='cpu', weights_only=False)
@@ -259,13 +225,11 @@ def main():
     phase1_epochs = 20
     phase2_epochs = 980
     
-    # Skip phase 1 entirely if we successfully resumed into a fully fine-tuned checkpoint,
-    # or if we explicitly loaded fully fine-tuned weights from the best model!
     if start_epoch >= phase1_epochs or args.best_model:
-         print("[SKIP] Phase 1 head burn-in redundant (fully-trained model loaded). Moving straight to phase 2 fine-tuning.")
+         print("[SKIP] Phase 1 head training redundant (fully-trained model loaded). Moving straight to phase 2 fine-tuning.")
          phase1_epochs = 0 
     
-    print("\n" + "="*60 + "\nPHASE 1: Head Burn-in\n" + "="*60)
+    print("\n" + "="*60 + "\nPhase 1: Head Training\n" + "="*60)
     
     for epoch in range(start_epoch, start_epoch + phase1_epochs):
         loss = train_one_epoch(model, optim, train_loader, device, epoch, scaler)
@@ -282,12 +246,11 @@ def main():
         if f1 > best_f1:
             best_f1 = f1
             torch.save({'model_state_dict': model.state_dict(), 'f1': f1, 'epoch': epoch}, os.path.join(chk_dir, "best_model.pth"))
-            print(f"  🏆 NEW BEST! Saved with F1={f1:.3f}")
+            print(f"  New best model saved (F1={f1:.3f})")
 
-    print("\n" + "="*60 + "\nPHASE 2: Full Model Unfreeze & Fine-Tuning (Longevity Run)\n" + "="*60)
+    print("\n" + "="*60 + "\nPhase 2: Full Model Fine-Tuning\n" + "="*60)
     unfreeze_backbone_v4(model)
     
-    # High-Performance Optimizer Configuration
     b_params = []
     h_params = []
     for name, param in model.named_parameters():
@@ -299,29 +262,25 @@ def main():
         {'params': h_params, 'lr': 5e-5}
     ], weight_decay=1e-4)
     
-    # 🔄 ADDING SCHEDULER: Gradually lowers learning rate to optimize final perfection phase
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim, T_max=phase2_epochs, eta_min=1e-8)
     
-    # 🚀 CATCH UP: Fast-forward scheduler state to match resumed step for unbroken curve
     if args.restart:
         past_phase2_steps = 0
     else:
         past_phase2_steps = max(0, start_epoch - 20)
         
     if past_phase2_steps > 0:
-        print(f"[SCHEDULER] Seamless alignment: Forwarding curve by {past_phase2_steps} steps.")
+        print(f"[SCHEDULER] Forwarding by {past_phase2_steps} steps.")
         for _ in range(past_phase2_steps): scheduler.step()
     
-    # Start loop from wherever start_epoch left off to maintain global counter
     if args.restart:
         loop_start = 0
     else:
-        loop_start = max(start_epoch, 20) # phase 1 total fixed count was 20
+        loop_start = max(start_epoch, 20)
     for epoch in range(loop_start, 1000):
         loss = train_one_epoch(model, optim, train_loader, device, epoch, scaler)
         prec, rec, f1 = evaluate_precision_recall_map(model, val_loader, device)
         
-        # Advance Scheduler Step
         scheduler.step()
         curr_lr = optim.param_groups[1]['lr']
         
@@ -336,19 +295,17 @@ def main():
         if f1 > best_f1:
             best_f1 = f1
             torch.save({'model_state_dict': model.state_dict(), 'f1': f1, 'epoch': epoch}, os.path.join(chk_dir, "best_model.pth"))
-            print(f"  🏆 NEW BEST! Saved with F1={f1:.3f}")
+            print(f"  New best model saved (F1={f1:.3f})")
             
-        # 🔒 CONTINUITY GUARD: Every 5 epochs, force a checkpoint write so progress is never lost!
         if epoch % 5 == 0:
             torch.save({
                 'model_state_dict': model.state_dict(), 
                 'f1': f1, 
                 'epoch': epoch,
-                'scheduler': scheduler.state_dict() # Keep scheduler curve synced
+                'scheduler': scheduler.state_dict()
             }, os.path.join(chk_dir, "last_epoch.pth"))
             
     print("\nTraining Complete. Check loss graphs.")
-    # Save graphs automatically
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history['epoch'], history['loss'], label="Loss")
@@ -358,7 +315,7 @@ def main():
     plt.plot(history['epoch'], history['rec'], label="Recall")
     plt.plot(history['epoch'], history['f1'], label="F1", linestyle='--')
     plt.legend()
-    plt.title("V4 Validation Metrics (True Indicators)")
+    plt.title("V4 Validation Metrics")
     plt.savefig(os.path.join(chk_dir, "v4_curves.png"))
     print("Curves saved to", os.path.join(chk_dir, "v4_curves.png"))
 
