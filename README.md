@@ -57,18 +57,46 @@ Input PCB Image
 
 ## Performance
 
-Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset). 
+Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset).
 
 Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/36).
 
-Trained model performance across the entire dataset:
+### Detection on original images
 
-| Metric | Value |
+| Metric | Value | Counts |
+|---|---|---|
+| Micro Precision | 0.9734 | TP 6434 / FP 176 |
+| Micro Recall | 0.9610 | TP 6434 / FN 261 |
+| Micro F1 | 0.9672 | |
+| Macro Precision | 0.9629 | |
+| Macro Recall | 0.9231 | |
+| Macro F1 | 0.9411 | |
+
+### Detection on SR-restored images
+
+| Metric | Value | Counts |
+|---|---|---|
+| Micro Precision | 0.9714 | TP 6416 / FP 189 |
+| Micro Recall | 0.9583 | TP 6416 / FN 279 |
+| Micro F1 | 0.9648 | |
+| Macro Precision | 0.9591 | |
+| Macro Recall | 0.9206 | |
+| Macro F1 | 0.9379 | |
+
+### SR-restored vs original (delta)
+
+| Metric | Delta |
 |---|---|
-| Micro Precision | 97.34% |
-| Micro Recall | 96.10% |
-| Micro F1 | 96.72% |
-| Macro F1 | 94.11% |
+| Micro F1 | −0.0023 |
+| Macro F1 | −0.0032 |
+
+The SR-restored path shows a negligible drop in detection quality (≤0.3% F1), confirming that the SR-restored original-size proxy preserves component-counting accuracy while reducing GPU memory pressure.
+
+### Why the detector was challenged on the FICS-PCB dataset
+
+The FICS-PCB dataset consists of high-resolution PCB images (most at 4928&times;3264 px or higher). These images are already sharp and well-lit at the component scale, many components occupy a large pixel area before any processing. The model was not fine-tuned on super-resolved or artificially sharpened images, so the SR pipeline does not have an opportunity to meaningfully improve small-component edges beyond what the original sensor already captured. The 4&times; upscale effectively injects interpolated detail and minor artifacts that the detector must then sort through, producing a marginal F1 reduction rather than a gain.
+
+For *lower-quality* PCB imaging (lower resolution, noise, compression artifacts), super-resolution would be expected to provide a measurable detection benefit by restoring fine component boundaries that the base image lacks.
 
 ---
 
