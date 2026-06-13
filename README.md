@@ -50,6 +50,7 @@ Input PCB Image
 ## Performance
 
 Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset). 
+
 Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/36).
 
 Trained model performance across the entire dataset:
