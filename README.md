@@ -112,7 +112,7 @@ The detection module uses Faster R-CNN with a ResNet-50 FPN backbone, built on t
 | Component classes | 7 — capacitor, resistor, IC, connector, LED, transistor, diode |
 | Checkpoint | `models/detection/best_model.pth` |
 
-Detection uses a three-pass V4 pipeline:
+Detection uses a three-pass pipeline:
 
 * **Pass A** — Full-frame baseline inference. Runs the detector across the entire image at once to capture large components (ICs, connectors) that span tile boundaries. Because Pass A operates on the full image, it uses the most GPU memory. The entire PCB image gets downsampled to 1024x1024 for the detection model.
 * **Pass B** — Tiled inference at 1024&times;1024 px with 60% overlap. Each tile is processed independently by the detector, recovering components at native resolution after Pass A context has been established.
@@ -125,7 +125,7 @@ For large images, Pass A can be moved to CPU to stay within GPU memory limits (&
 Three detection modes are available:
 
 * **CPU + GPU** (default) — Pass A on CPU for large/high-risk images; Pass B/C on GPU. This is necessary if the GPU being used does not have enough VRAM to inference the input image.
-* **GPU only** — full V4 pipeline on GPU.
+* **GPU only** — full pipeline on GPU.
 * **Fast Preview** — Pass A only, for quick results.
 
 Thresholds and NMS parameters are configured in `inference/aoi_inference_engine.py`.
@@ -231,7 +231,7 @@ SRPCB_GUI/
 │   ├── sr_engine.py
 │   ├── detection_result.py
 │   └── vram_strategy.py
-├── detection/                 V4 detection pipeline source
+├── detection/                 detection pipeline source
 │   ├── pretrained_model.py
 │   ├── dataset_v4.py
 │   └── inference_v4.py
@@ -254,6 +254,22 @@ SRPCB_GUI/
 ```
 
 ---
+
+## Model Weights
+
+Model weights are distributed through the GitHub Releases page because they exceed normal GitHub repository file size limits.
+
+Download the release assets:
+
+- `SRPCB_detection_best_model.pth`
+- `SRPCB_super_resolution_best_model.pth`
+
+Then place them as:
+
+```text
+models/detection/best_model.pth
+models/super_resolution/best_model.pth
+```
 
 ## Credits
 
