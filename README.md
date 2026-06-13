@@ -1,12 +1,10 @@
-# Super Resolution & PCB Component Counting
+# Super Resolution & PCB Component Detection
 
-PyQt GUI combining PCB image super-resolution with Faster R-CNN component counting for Automated Optical Inspection.
+PyQt GUI combining PCB image super-resolution (SR) with Faster R-CNN component counting for Automated Optical Inspection. Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
 
 **Course:** Automated Optical Inspection, National Taiwan University
 
 **Project:** Machine Learning-Based PCB Image Restoration and Quality Assurance for Automated Optical Inspection
-
-**Authors:** Steven Jones &amp; Isabella Scalia
 
 ---
 
@@ -51,9 +49,10 @@ Input PCB Image
 
 ## Performance
 
-Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset). Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/36).
+Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset). 
+Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/36).
 
-Trained model performance:
+Trained model performance across the entire dataset:
 
 | Metric | Value |
 |---|---|
@@ -79,7 +78,7 @@ The super-resolution module uses EDSRLite — a lightweight EDSR variant impleme
 | Residual blocks | 8 |
 | Checkpoint | `models/super_resolution/best_model.pth` |
 
-The engine processes large PCB images via **tiled inference** (32&times;32 px patches, stride 24, scale 4) with GPU-batched execution. Batch size adapts to available VRAM at runtime.
+The program processes large PCB images via **tiled inference** (32&times;32 px patches, stride 24, scale 4) with GPU-batched execution. Batch size adapts to available VRAM at runtime.
 
 Tiling parameters are defined in `inference/sr_engine.py`.
 
@@ -88,7 +87,7 @@ The GUI produces two outputs from each SR run:
 * **Full SR output** — the complete 4&times; upscaled image, used for visual inspection, display, and export.
 * **SR-restored detection** — the SR output resized back to the original image dimensions, used as the detection input when &ldquo;SR-Restored Image (Original Size)&rdquo; is selected. This keeps restoration benefits while avoiding CUDA out-of-memory errors from feeding full-resolution SR canvases into Faster R-CNN.
 
-### Faster R-CNN Component Counter
+### Faster R-CNN Component Detection
 
 The detection module uses Faster R-CNN with a ResNet-50 FPN backbone, built on torchvision. The model is initialised from COCO-pretrained weights and fine-tuned on the WACV 2019 PCB component dataset.
 
@@ -116,7 +115,7 @@ For large images, Pass A can be moved to CPU to stay within GPU memory limits (&
 
 Three detection modes are available:
 
-* **CPU + GPU** (default) — Pass A on CPU for large/high-risk images; Pass B/C on GPU.
+* **CPU + GPU** (default) — Pass A on CPU for large/high-risk images; Pass B/C on GPU. This is necessary if the GPU being used does not have enough VRAM to inference the input image.
 * **GPU only** — full V4 pipeline on GPU.
 * **Fast Preview** — Pass A only, for quick results.
 
@@ -133,7 +132,7 @@ Input PCB Image
       │       ├── Full SR Output — inspection and export
       │       └── SR-Restored Original-Size Proxy — detection input
       │
-      └── Faster R-CNN Detector (ResNet-50 FPN, V4 pipeline)
+      └── Faster R-CNN Detector (ResNet-50 FPN)
               ├── Bounding boxes and class labels
               ├── Confidence scores
               ├── Component counts per class
@@ -249,9 +248,9 @@ SRPCB_GUI/
 
 ## Credits
 
-Developed for the Automated Optical Inspection course.
+Developed for the final project of the **Automated Optical Inspection** course at National Taiwan University.
 
-* **Steven Jones** — PCB component counting, Faster R-CNN inference integration, VRAM-aware detection strategy, GUI and reporting.
+* **Steven Jones** — PCB component counting, Faster R-CNN inference integration, GUI and reporting.
 * **Isabella Scalia** — PCB super-resolution, image restoration workflow, SR model integration.
 
 ---
