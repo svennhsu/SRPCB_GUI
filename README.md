@@ -1,6 +1,6 @@
 # Super Resolution & PCB Component Detection
 
-PyQt GUI combining PCB image super-resolution (SR) with Faster R-CNN component counting for Automated Optical Inspection. Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
+We combined PCB image super-resolution (SR) with Faster R-CNN component counting in a single detection pipeline. Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
 
 **Course:** Automated Optical Inspection, National Taiwan University
 
