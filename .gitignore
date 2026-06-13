@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+.venv-gpu/
+venv/
+env/
+
+# Runtime files (keep dirs, ignore contents)
+cache/*
+!cache/.gitkeep
+!cache/annotated/
+!cache/annotated/.gitkeep
+!cache/sr/
+!cache/sr/.gitkeep
+!cache/sr_detection_proxy/
+!cache/sr_detection_proxy/.gitkeep
+outputs/*
+!outputs/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+
+
+# Model weights - use Git LFS or external download instead
+*.pth
+*.pt
+*.ckpt
+*.onnx
