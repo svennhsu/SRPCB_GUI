@@ -1,6 +1,6 @@
 # Super Resolution & PCB Component Detection
 
-We combined PCB image super-resolution (SR) with Faster R-CNN component counting in a single detection pipeline. Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
+We combined PCB image super-resolution (SR) with Faster R-CNN component counting in a single detection pipeline on the [FICS-PCB Dataset](https://trust-hub.org/#/data/fics-pcb). Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
 
 **Course:** Automated Optical Inspection, National Taiwan University
 
@@ -18,11 +18,11 @@ We combined PCB image super-resolution (SR) with Faster R-CNN component counting
 
 **Unseen PCB** (not in dataset):
 
-| Input | Detection Report |
+| Input | Detection Result |
 |---|---|
 | ![](docs/Olympus_C-960.jpg) | ![](docs/Olympus_C-960_V4_Report.jpg) |
 
-Performance on an unseen PCB shows that the method works well on unseen PCBs, though results could be improved with fine-tuning on more diverse data.
+Performance on an unseen PCB shows that the method works well, though results could be improved with fine-tuning on more diverse data.
 
 ---
 
