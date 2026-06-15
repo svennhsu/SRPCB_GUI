@@ -32,7 +32,7 @@ Performance on an unseen PCB shows that the method works well, though results co
 * Run super-resolution (tiled EDSRLite model)
 * Run Faster R-CNN component counting (detection pipeline)
 * Detect on original image or SR-restored original-size proxy
-* VRAM-aware detection strategy — adapts tiling to available GPU memory
+* VRAM-aware detection strategy, adapts tiling to available GPU memory
 * Zoomable/pannable image viewers (original, SR, detection)
 * Save SR image, save annotated detection image
 * Export component counts CSV
@@ -59,7 +59,7 @@ Input PCB Image
 
 Evaluated on the [FICS-PCB dataset](https://trust-hub.org/#/data/fics-pcb) (WACV 2019 PCB component dataset).
 
-Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/36).
+Reference paper: [*Component Counting for PCB Boards*](https://eprint.iacr.org/2020/366).
 
 ### Detection on original images
 
@@ -104,7 +104,7 @@ For *lower-quality* PCB imaging (lower resolution, noise, compression artifacts)
 
 ### Super-Resolution Model
 
-The super-resolution module uses EDSRLite — a lightweight EDSR variant implemented in PyTorch. Configuration is read from the checkpoint at load time; the defaults are shown below.
+The super-resolution module uses EDSRLite, a lightweight EDSR variant implemented in PyTorch. Configuration is read from the checkpoint at load time; the defaults are shown below.
 
 | Parameter | Value |
 |---|---|
@@ -121,8 +121,8 @@ Tiling parameters are defined in `inference/sr_engine.py`.
 
 The GUI produces two outputs from each SR run:
 
-* **Full SR output** — the complete 4&times; upscaled image, used for visual inspection, display, and export.
-* **SR-restored detection** — the SR output resized back to the original image dimensions, used as the detection input when &ldquo;SR-Restored Image (Original Size)&rdquo; is selected. This keeps restoration benefits while avoiding CUDA out-of-memory errors from feeding full-resolution SR canvases into Faster R-CNN.
+* **Full SR output**: the complete 4&times; upscaled image, used for visual inspection, display, and export.
+* **SR-restored detection**: the SR output resized back to the original image dimensions, used as the detection input when &ldquo;SR-Restored Image (Original Size)&rdquo; is selected. This keeps restoration benefits while avoiding CUDA out-of-memory errors from feeding full-resolution SR canvases into Faster R-CNN.
 
 ### Faster R-CNN Component Detection
 
@@ -142,9 +142,9 @@ The detection module uses Faster R-CNN with a ResNet-50 FPN backbone, built on t
 
 Detection uses a three-pass pipeline:
 
-* **Pass A** — Full-frame baseline inference. Runs the detector across the entire image at once to capture large components (ICs, connectors) that span tile boundaries. Because Pass A operates on the full image, it uses the most GPU memory. The entire PCB image gets downsampled to 1024x1024 for the detection model.
-* **Pass B** — Tiled inference at 1024&times;1024 px with 60% overlap. Each tile is processed independently by the detector, recovering components at native resolution after Pass A context has been established.
-* **Pass C** — Tiled inference at 512&times;512 px with 60% overlap, upsampled to 1024x1024 px for the detection model. Pass C targets small SMD components (capacitors, resistors, LEDs) that may be missed by the coarser Pass B tiles.
+* **Pass A**: Full-frame baseline inference. Runs the detector across the entire image at once to capture large components (ICs, connectors) that span tile boundaries. Because Pass A operates on the full image, it uses the most GPU memory. The entire PCB image gets downsampled to 1024x1024 for the detection model.
+* **Pass B**: Tiled inference at 1024&times;1024 px with 60% overlap. Each tile is processed independently by the detector, recovering components at native resolution after Pass A context has been established.
+* **Pass C**: Tiled inference at 512&times;512 px with 60% overlap, upsampled to 1024x1024 px for the detection model. Pass C targets small SMD components (capacitors, resistors, LEDs) that may be missed by the coarser Pass B tiles.
 
 Detections from all three passes are merged with class-aware NMS that protects Pass A large-component predictions from being suppressed by overlapping Pass B/C tile predictions. Edge components are recovered via coordinate expansion against raw Pass A boxes.
 
@@ -152,9 +152,9 @@ For large images, Pass A can be moved to CPU to stay within GPU memory limits (&
 
 Three detection modes are available:
 
-* **CPU + GPU** (default) — Pass A on CPU for large/high-risk images; Pass B/C on GPU. This is necessary if the GPU being used does not have enough VRAM to inference the input image.
-* **GPU only** — full pipeline on GPU.
-* **Fast Preview** — Pass A only, for quick results.
+* **CPU + GPU** (default): Pass A on CPU for large/high-risk images; Pass B/C on GPU. This is necessary if the GPU being used does not have enough VRAM to inference the input image.
+* **GPU only**: full pipeline on GPU.
+* **Fast Preview**: Pass A only, for quick results.
 
 Thresholds and NMS parameters are configured in `inference/aoi_inference_engine.py`.
 
@@ -303,8 +303,8 @@ models/super_resolution/best_model.pth
 
 Developed for the final project of the **Automated Optical Inspection** course at National Taiwan University.
 
-* **Steven Jones** — PCB component counting, Faster R-CNN inference integration, GUI and reporting.
-* **Isabella Scalia** — PCB super-resolution, image restoration workflow, SR model integration.
+* **Steven Jones** — PCB component counting, Faster R-CNN inference integration, GUI, and reporting.
+* **Isabella Scalia** — PCB super-resolution, image restoration workflow, SR model integration, and reporting.
 
 ---
 
