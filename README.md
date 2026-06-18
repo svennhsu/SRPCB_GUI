@@ -2,7 +2,7 @@
 
 We combined PCB image super-resolution (SR) with Faster R-CNN component counting in a single detection pipeline on the [FICS-PCB Dataset](https://trust-hub.org/#/data/fics-pcb). Our main goal is to improve the performance for small components (SMDs) and making a user interface that is easy to use.
 
-**Course:** Automated Optical Inspection, National Taiwan University
+**Course:** Automated Optical Inspection, National Taiwan University (2026)
 
 **Project:** Machine Learning-Based PCB Image Restoration and Quality Assurance for Automated Optical Inspection
 
